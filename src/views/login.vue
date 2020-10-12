@@ -49,9 +49,7 @@ export default {
                 email:this.email,
                 password:md5(this.password)
             }
-            let res = this.$store.dispatch('login',data);
-            if(res)
-                this.$router.push('/usuarios')
+            this.$store.dispatch('login',data);
         }
     }
 }

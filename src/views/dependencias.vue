@@ -1,28 +1,19 @@
 <template>
     <v-data-table
         :headers="headers"
-        :items="usuarios"
-        :search="search"
+        :items="dependencias"
     >
         <template v-slot:top>
             <v-toolbar
                 flat
             >
-                <v-toolbar-title>Los usuarios del sistema</v-toolbar-title>
+                <v-toolbar-title>Las dependendencias del sistema</v-toolbar-title>
                 <v-divider
                     class="mx-4"
                     inset
                     vertical
                 ></v-divider>
                 <v-spacer></v-spacer>
-                <v-text-field
-                    v-model="search"
-                    append-icon="mdi-magnify"
-                    label="Search"
-                    single-line
-                    hide-details
-                    class="mr-5"
-                ></v-text-field>
                 <v-dialog
                     v-model="dialog"
                     max-width="1000px"
@@ -35,10 +26,9 @@
                             v-bind="attrs"
                             v-on="on"
                             >
-                            Nuevo usuario
+                            Nueva dependencia
                         </v-btn>
                     </template>
-
                     <v-card>
                         <v-card-title>
                             <span class="headline">{{ formTitle }}</span>
@@ -55,40 +45,33 @@
                                     </v-col>
                                     <v-col cols="4">
                                         <v-text-field
-                                            v-model="editedItem.apellido"
-                                            label="Apellido"
+                                            v-model="editedItem.coordinador"
+                                            label="Coordinador"
                                         ></v-text-field>
                                     </v-col>
                                     <v-col cols="4">
                                         <v-text-field
-                                            v-model="editedItem.email"
-                                            label="Email"
+                                            v-model="editedItem.ubicacion"
+                                            label="Ubicacion"
                                         ></v-text-field>
                                     </v-col>
                                 </v-row>
-                                <v-row>
+                                    <v-col cols="4">
+                                        <v-text-field
+                                            v-model="editedItem.maximo_numero_usuarios"
+                                            label="Maximo Numero de usuarios"
+                                            type="number"
+                                        ></v-text-field>
+                                    </v-col>
                                     <v-col cols="4">
                                         <v-checkbox
-                                            v-model="editedItem.activo"
-                                            label="Activo"
+                                            v-model="editedItem.activa"
+                                            label="Activa"
                                         ></v-checkbox>
                                     </v-col>
                                     <v-col cols="4">
-                                        <v-select
-                                            v-model="editedItem.dependencia"
-                                            :items="dependencias"
-                                            item-text="nombre"
-                                            return-object
-                                        ></v-select>
                                     </v-col>
-                                    <v-col cols="4">
-                                        
-                                    </v-col>
-                                </v-row>
                                 <v-row>
-                                    <v-col cols="12">
-                                        <v-date-picker v-model="editedItem.valido_hasta"></v-date-picker>
-                                    </v-col>
                                 </v-row>
                             </v-container>
                         </v-card-text>
@@ -116,7 +99,7 @@
                     max-width="500px"
                 >
                     <v-card>
-                        <v-card-title class="headline">Estas seguro de eliminar este usuario?</v-card-title>
+                        <v-card-title class="headline">Estas seguro de eliminar esta dependencia?</v-card-title>
                         <v-card-actions>
                         <v-spacer></v-spacer>
                         <v-btn color="blue darken-1" text @click="closeDelete">Cancelar</v-btn>
@@ -124,6 +107,25 @@
                         <v-spacer></v-spacer>
                         </v-card-actions>
                     </v-card>
+                </v-dialog>
+                <v-dialog 
+                    v-model="dialogUsers" 
+                    max-width="500px"
+                >
+                    <v-list>
+                        <v-list-item
+                            v-for="(user,i) in usuarios"
+                            :key="i"
+                        >
+                            <v-list-item-title>
+                                {{user.nombre}}
+                            </v-list-item-title>
+                            <v-list-item-subtitle>
+                                {{user.apellido}}
+                            </v-list-item-subtitle>
+                        </v-list-item>
+                    </v-list>
+                    <v-btn color="blue darken-1" text @click="closeShow">Cerrar</v-btn>
                 </v-dialog>
             </v-toolbar>
         </template>
@@ -137,9 +139,16 @@
             </v-icon>
             <v-icon
                 small
+                class="mr-2"
                 @click="deleteItem(item)"
             >
                 mdi-delete
+            </v-icon>
+            <v-icon
+                small
+                @click="showDependencyUsers(item)"
+            >
+                mdi-feature-search
             </v-icon>
         </template>
         <template v-slot:no-data>
@@ -154,49 +163,46 @@
 </template>
 
 <script>
+
 import {db} from '../firebase'
 
-var md5 = require('md5');
-
 export default {
-    data() {
+    data(){
         return {
-            usuarios: [],
-            dependencias: [],
+            dependencias:[],
+            usuarios:[],
             dialog: false,
             dialogDelete: false,
-            headers:[
+            dialogUsers:false,
+             headers:[
                 {text: 'Nombre', value: 'nombre'},
-                {text: 'Apellido', value: 'apellido'},
-                {text: 'Email', value: 'email'},
-                {text: 'Valido hasta', value:'valido_hasta'},
-                {text: 'Activo', value:'activo'},
-                {text: 'Dependencia', value:'dependencia.nombre'},
+                {text: 'Coordinador', value: 'coordinador'},
+                {text: 'Ubicacion', value: 'ubicacion'},
+                {text: 'Maxino numero de usuarios', value:'maximo_numero_usuarios'},
+                {text: 'Activa', value:'activa'},
                 { text: 'Acciones', value: 'actions', sortable: false }
             ],
             editedItem: {
                 nombre: '',
-                apellido:'',
-                email:'',
-                valido_hasta:'',
-                activo:'',
-                dependencia:'',
+                coordinador:'',
+                ubicacion:'',
+                maximo_numero_usuarios:'',
+                activa:''
             },
             defaultItem: {
                 nombre: '',
-                apellido:'',
-                email:'',
-                valido_hasta:'',
-                activo:'',
-                dependencia:''
+                coordinador:'',
+                ubicacion:'',
+                maximo_numero_usuarios:'',
+                activa:''
             },
             editedIndex: -1,
-            search: ''
+            showingDependency:''
         }
     },
-    computed:{
+    computed: {
         formTitle () {
-            return this.editedIndex === -1 ? 'Nuevo usuario' : 'Editar usuario'
+            return this.editedIndex === -1 ? 'Nueva dependencia' : 'Editar dependencia'
         }
     },
     methods:{
@@ -214,22 +220,20 @@ export default {
                 this.editedIndex = -1
             })
         },
+        closeShow(){
+            this.dialogUsers = false;
+            this.$nextTick(() => {
+                this.usuarios=[];
+                this.showingDependency='';
+            })
+        },
         save () {
             if (this.editedIndex != -1) {
-
-                this.editedItem.dependencia=db.collection('dependencias').doc(this.editedItem.dependencia.id)
-
-                db.collection('usuarios')
+                db.collection('dependencias')
                 .doc(this.editedIndex)
                 .set(this.editedItem)
             } else {
-                let nuevoUsuario=this.editedItem;
-                
-                nuevoUsuario.dependencia=db.collection('dependencias').doc(nuevoUsuario.dependencia.id)
-
-                nuevoUsuario.password=md5('123456');
-
-                db.collection('usuarios').add(nuevoUsuario)
+                db.collection('dependencias').add(this.editedItem)
             }
             this.close()
         },
@@ -238,28 +242,49 @@ export default {
             this.editedItem = Object.assign({}, item)
             this.dialog = true
         },
-
         deleteItem (item) {
-            this.editedIndex = item.id
-            this.editedItem = Object.assign({}, item)
-            this.dialogDelete = true
+            db.collection('usuarios')
+            .where('dependencia',"==",db.collection('dependencias').doc(item.id))
+            .get()
+            .then(querySnapshot =>{
+                const usdep=querySnapshot.docs.map(doc => doc.data())
+                if(usdep && usdep.length){
+                    this.$alert("Oye manito, esta dependencia aun tiene usuarios");
+                }else{    
+                    this.editedIndex = item.id
+                    this.editedItem = Object.assign({}, item)
+                    this.dialogDelete = true
+                }
+            })
         },
-
         deleteItemConfirm () {
-            db.collection('usuarios').doc(this.editedIndex).delete()
+            db.collection('dependencias').doc(this.editedIndex).delete()
             this.closeDelete()
+        },
+        showDependencyUsers(item){
+            this.dialogUsers=true;
+            this.showingDependency=item;
+            db.collection('usuarios')
+            .where('dependencia',"==",db.collection('dependencias').doc(item.id))
+            .get()
+            .then(querySnapshot=>{
+                const usdep=querySnapshot.docs.map(doc=>doc.data())
+                this.usuarios=usdep;
+            })
         }
     },
     watch: {
-      dialog (val) {
-        val || this.close()
-      },
-      dialogDelete (val) {
-        val || this.closeDelete()
-      },
+        dialog (val) {
+            val || this.close()
+        },
+        dialogDelete (val) {
+            val || this.closeDelete()
+        },
+        dialogUsers(val){
+            val || this.closeShow()
+        }
     },
     firestore: {
-        usuarios: db.collection('usuarios'),
         dependencias: db.collection('dependencias')
     }
 }
