@@ -12,6 +12,7 @@ export default new Vuex.Store({
             apellido:'',
             email:''
         },
+        errorAlert:false
     },
     actions:{
         login({commit},data){
@@ -25,9 +26,8 @@ export default new Vuex.Store({
                     commit('setNombre',user.nombre)
                     commit('setApellido',user.apellido)
                     router.push('/usuarios')
-                    return true;
                 }else{
-                    return false;
+                    commit('setErrorAlert',true)
                 }
             })
         },
@@ -47,6 +47,9 @@ export default new Vuex.Store({
         },
         setApellido(state,apellido){
             state.user.apellido=apellido;
+        },
+        setErrorAlert(state,errorAlert){
+            state.errorAlert=errorAlert;
         }
     }
 })
