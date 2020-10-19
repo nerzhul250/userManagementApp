@@ -21,7 +21,7 @@
                         <v-btn @click="submit">
                             Entrar
                         </v-btn>
-                        <v-btn @click="submit">
+                        <v-btn to='/registration'>
                             Registro
                         </v-btn>
                     </div>

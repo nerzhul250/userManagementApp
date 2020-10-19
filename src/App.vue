@@ -9,7 +9,11 @@
        <v-toolbar-title>Holaaa! {{this.$store.state.user.nombre}} {{this.$store.state.user.apellido}}</v-toolbar-title>
     </div>
     <div v-else>
-      <p><strong>Logueate querido empleado</strong></p>
+      <router-link
+        to='/'
+      >
+        <v-btn>Logueate querido empleado</v-btn>
+      </router-link>
     </div>
     <v-spacer></v-spacer>
     <div v-if="userIsLogged">

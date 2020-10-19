@@ -35,45 +35,55 @@
                         </v-card-title>
 
                         <v-card-text>
-                            <v-container>
-                                <v-row>
-                                    <v-col cols="4">
-                                        <v-text-field
-                                            v-model="editedItem.nombre"
-                                            label="Nombre"
-                                        ></v-text-field>
-                                    </v-col>
-                                    <v-col cols="4">
-                                        <v-text-field
-                                            v-model="editedItem.coordinador"
-                                            label="Coordinador"
-                                        ></v-text-field>
-                                    </v-col>
-                                    <v-col cols="4">
-                                        <v-text-field
-                                            v-model="editedItem.ubicacion"
-                                            label="Ubicacion"
-                                        ></v-text-field>
-                                    </v-col>
-                                </v-row>
-                                    <v-col cols="4">
-                                        <v-text-field
-                                            v-model="editedItem.maximo_numero_usuarios"
-                                            label="Maximo Numero de usuarios"
-                                            type="number"
-                                        ></v-text-field>
-                                    </v-col>
-                                    <v-col cols="4">
-                                        <v-checkbox
-                                            v-model="editedItem.activa"
-                                            label="Activa"
-                                        ></v-checkbox>
-                                    </v-col>
-                                    <v-col cols="4">
-                                    </v-col>
-                                <v-row>
-                                </v-row>
-                            </v-container>
+                            <v-form v-model="valid">
+                                <v-container>
+                                    <v-row>
+                                        <v-col cols="4">
+                                            <v-text-field
+                                                v-model="editedItem.nombre"
+                                                label="Nombre"
+                                                :rules="genericRules"
+                                                required
+                                            ></v-text-field>
+                                        </v-col>
+                                        <v-col cols="4">
+                                            <v-text-field
+                                                v-model="editedItem.coordinador"
+                                                label="Coordinador"
+                                                :rules="genericRules"
+                                                required
+                                            ></v-text-field>
+                                        </v-col>
+                                        <v-col cols="4">
+                                            <v-text-field
+                                                v-model="editedItem.ubicacion"
+                                                label="Ubicacion"
+                                                :rules="genericRules"
+                                                required
+                                            ></v-text-field>
+                                        </v-col>
+                                    </v-row>
+                                        <v-col cols="4">
+                                            <v-text-field
+                                                v-model="editedItem.maximo_numero_usuarios"
+                                                label="Maximo Numero de usuarios"
+                                                type="number"
+                                                :rules="genericRules"
+                                                required
+                                            ></v-text-field>
+                                        </v-col>
+                                        <v-col cols="4">
+                                            <v-checkbox
+                                                v-model="editedItem.activa"
+                                                label="Activa"
+                                            ></v-checkbox>
+                                        </v-col>
+                                        <v-col cols="4">
+                                        </v-col>
+                                    <v-row>
+                                    </v-row>
+                                </v-container>
+                            </v-form>
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
@@ -112,7 +122,14 @@
                     v-model="dialogUsers" 
                     max-width="500px"
                 >
-                    <v-list>
+                <v-card class="pa-5">
+                    <v-card-title>
+                        Dependencia: {{showingDependency.nombre}}
+                    </v-card-title>
+                    <v-card-sutitle>
+                        Coordinador: {{showingDependency.coordinador}}
+                    </v-card-sutitle>
+                    <v-list two-line>
                         <v-list-item
                             v-for="(user,i) in usuarios"
                             :key="i"
@@ -125,7 +142,10 @@
                             </v-list-item-subtitle>
                         </v-list-item>
                     </v-list>
-                    <v-btn color="blue darken-1" text @click="closeShow">Cerrar</v-btn>
+                    <v-card-actions>
+                        <v-btn color="blue darken-1" text @click="closeShow">Cerrar</v-btn>
+                    </v-card-actions>
+                </v-card>       
                 </v-dialog>
             </v-toolbar>
         </template>
@@ -169,6 +189,7 @@ import {db} from '../firebase'
 export default {
     data(){
         return {
+            valid:false,
             dependencias:[],
             usuarios:[],
             dialog: false,
@@ -187,17 +208,20 @@ export default {
                 coordinador:'',
                 ubicacion:'',
                 maximo_numero_usuarios:'',
-                activa:''
+                activa:false
             },
             defaultItem: {
                 nombre: '',
                 coordinador:'',
                 ubicacion:'',
                 maximo_numero_usuarios:'',
-                activa:''
+                activa:false
             },
             editedIndex: -1,
-            showingDependency:''
+            showingDependency:'',
+            genericRules: [
+                g => !!g || 'Este campo es obligatorio'
+            ],
         }
     },
     computed: {
@@ -228,14 +252,18 @@ export default {
             })
         },
         save () {
-            if (this.editedIndex != -1) {
-                db.collection('dependencias')
-                .doc(this.editedIndex)
-                .set(this.editedItem)
-            } else {
-                db.collection('dependencias').add(this.editedItem)
+            if(this.valid){
+                if (this.editedIndex != -1) {
+                    db.collection('dependencias')
+                    .doc(this.editedIndex)
+                    .set(this.editedItem)
+                } else {
+                    db.collection('dependencias').add(this.editedItem)
+                }
+                this.close()
+            }else{
+                alert("Hay campos que aun no estan llenos")
             }
-            this.close()
         },
         editItem (item) {
             this.editedIndex = item.id
@@ -249,7 +277,7 @@ export default {
             .then(querySnapshot =>{
                 const usdep=querySnapshot.docs.map(doc => doc.data())
                 if(usdep && usdep.length){
-                    this.$alert("Oye manito, esta dependencia aun tiene usuarios");
+                    this.$alert("Esta dependencia aun tiene usuarios");
                 }else{    
                     this.editedIndex = item.id
                     this.editedItem = Object.assign({}, item)

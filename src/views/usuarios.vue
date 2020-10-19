@@ -43,54 +43,68 @@
                         <v-card-title>
                             <span class="headline">{{ formTitle }}</span>
                         </v-card-title>
-
+                        <v-card-subtitle>
+                            La contraseña por default es: 123456
+                        </v-card-subtitle>
                         <v-card-text>
-                            <v-container>
-                                <v-row>
-                                    <v-col cols="4">
-                                        <v-text-field
-                                            v-model="editedItem.nombre"
-                                            label="Nombre"
-                                        ></v-text-field>
-                                    </v-col>
-                                    <v-col cols="4">
-                                        <v-text-field
-                                            v-model="editedItem.apellido"
-                                            label="Apellido"
-                                        ></v-text-field>
-                                    </v-col>
-                                    <v-col cols="4">
-                                        <v-text-field
-                                            v-model="editedItem.email"
-                                            label="Email"
-                                        ></v-text-field>
-                                    </v-col>
-                                </v-row>
-                                <v-row>
-                                    <v-col cols="4">
-                                        <v-checkbox
-                                            v-model="editedItem.activo"
-                                            label="Activo"
-                                        ></v-checkbox>
-                                    </v-col>
-                                    <v-col cols="4">
-                                        <v-select
-                                            v-model="editedItem.dependencia"
-                                            :items="dependencias"
-                                            item-text="nombre"
-                                            return-object
-                                        ></v-select>
-                                    </v-col>
-                                    <v-col cols="4">
-                                        
-                                    </v-col>
-                                </v-row>
-                                <v-row>
-                                    <v-col cols="12">
-                                        <v-date-picker v-model="editedItem.valido_hasta"></v-date-picker>
-                                    </v-col>
-                                </v-row>
-                            </v-container>
+                            <v-form v-model="valid">
+                                <v-container>
+                                    <v-row>
+                                        <v-col cols="4">
+                                            <v-text-field
+                                                v-model="editedItem.nombre"
+                                                label="Nombre"
+                                                :rules="genericRules"
+                                                required
+                                            ></v-text-field>
+                                        </v-col>
+                                        <v-col cols="4">
+                                            <v-text-field
+                                                v-model="editedItem.apellido"
+                                                label="Apellido"
+                                                :rules="genericRules"
+                                                required
+                                            ></v-text-field>
+                                        </v-col>
+                                        <v-col cols="4">
+                                            <v-text-field
+                                                v-model="editedItem.email"
+                                                label="Email"
+                                                :rules="emailRules"
+                                                required
+                                            ></v-text-field>
+                                        </v-col>
+                                    </v-row>
+                                    <v-row>
+                                        <v-col cols="4">
+                                            <v-checkbox
+                                                v-model="editedItem.activo"
+                                                label="Activo"
+                                            ></v-checkbox>
+                                        </v-col>
+                                        <v-col cols="4">
+                                            <v-select
+                                                v-model="editedItem.dependencia"
+                                                :items="dependencias"
+                                                item-text="nombre"
+                                                return-object
+                                                :rules="genericRules"
+                                                required
+                                            ></v-select>
+                                        </v-col>
+                                        <v-col cols="4">
+                                            
+                                        </v-col>
+                                    </v-row>
+                                    <v-row>
+                                        <v-col cols="12">
+                                            <v-date-picker
+                                                v-model="editedItem.valido_hasta"
+                                            ></v-date-picker>
+                                        </v-col>
+                                    </v-row>
+                                </v-container>
+                            </v-form>
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
@@ -161,6 +175,7 @@ var md5 = require('md5');
 export default {
     data() {
         return {
+            valid:false,
             usuarios: [],
             dependencias: [],
             dialog: false,
@@ -179,7 +194,7 @@ export default {
                 apellido:'',
                 email:'',
                 valido_hasta:'',
-                activo:'',
+                activo:false,
                 dependencia:'',
             },
             defaultItem: {
@@ -187,11 +202,18 @@ export default {
                 apellido:'',
                 email:'',
                 valido_hasta:'',
-                activo:'',
+                activo:false,
                 dependencia:''
             },
             editedIndex: -1,
-            search: ''
+            search: '',
+            emailRules: [
+                v => !!v || 'E-mail es obligatorio',
+                v => /.+@.+/.test(v) || 'E-mail es invalido',
+            ],
+            genericRules: [
+                g => !!g || 'Este campo es obligatorio'
+            ],
         }
     },
     computed:{
@@ -215,23 +237,28 @@ export default {
             })
         },
         save () {
-            if (this.editedIndex != -1) {
+            if(this.valid && this.editedItem.valido_hasta){
+                if (this.editedIndex != -1) {
 
-                this.editedItem.dependencia=db.collection('dependencias').doc(this.editedItem.dependencia.id)
+                    this.editedItem.dependencia=db.collection('dependencias').doc(this.editedItem.dependencia.id)
 
-                db.collection('usuarios')
-                .doc(this.editedIndex)
-                .set(this.editedItem)
-            } else {
-                let nuevoUsuario=this.editedItem;
-                
-                nuevoUsuario.dependencia=db.collection('dependencias').doc(nuevoUsuario.dependencia.id)
+                    db.collection('usuarios')
+                    .doc(this.editedIndex)
+                    .set(this.editedItem)
+                } else {
+                    let nuevoUsuario=this.editedItem;
+                    
+                    nuevoUsuario.dependencia=db.collection('dependencias').doc(nuevoUsuario.dependencia.id)
 
-                nuevoUsuario.password=md5('123456');
+                    nuevoUsuario.password=md5('123456');
 
-                db.collection('usuarios').add(nuevoUsuario)
+                    db.collection('usuarios').add(nuevoUsuario)
+                }
+                this.close()
+            }else{
+                alert("Faltan campos por llenar")
             }
-            this.close()
+            
         },
         editItem (item) {
             this.editedIndex = item.id

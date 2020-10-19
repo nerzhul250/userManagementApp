@@ -17,7 +17,7 @@ router.beforeEach((to, from, next) => {
     return next({path: '/usuarios'})
   }
   console.log(store.state.user.email)
-  if(store.state.user.email==='' && to.name!='login'){
+  if(store.state.user.email==='' && to.name!='login' && to.name!='registration'){
     return next({path: '/'})
   }
   // Let the user pass
